@@ -1,0 +1,1 @@
+# helldiver2-mod-manager
