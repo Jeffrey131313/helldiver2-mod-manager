@@ -1,0 +1,39 @@
+name: 🐛 Bug Report
+description: 报告游戏或管理器存在的缺陷
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 请确认：
+        - [ ] 我已查阅过现有Issue
+        - [ ] 我正在使用最新版本
+
+  - type: textarea
+    attributes:
+      label: 你的环境
+      description: （操作系统、管理器版本）
+      placeholder: "例如：Windows 11/管理器v0.5.1"
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 重现步骤
+      placeholder: "1. 打开管理器\n2. 点击...\n3. 出现错误..."
+      
+  - type: textarea
+    attributes:
+      label: 期望行为
+      placeholder: "应该正常执行..."
+
+  - type: textarea
+  attributes:
+    label: 上传日志, 日志在./MD2MM.log
+    description: | 
+      <请将文件拖拽至此区域 或 通过云分享链接提供>
+      支持格式：.log/.zip/.txt（单个文件≤10MB）
+  placeholder: 在此粘贴文件分享链接
+  validations:
+    required: true
