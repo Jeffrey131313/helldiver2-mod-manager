@@ -3,12 +3,14 @@ description: 报告游戏或管理器存在的缺陷
 title: "[BUG] "
 labels: ["bug"]
 body:
-  - type: markdown
+  - type: checkboxes
     attributes:
-      value: |
-        ### 请确认：
-        - [ ] 我已查阅过现有Issue
-        - [ ] 我正在使用最新版本
+      label: 前置确认（必须全部勾选才能提交）
+      options:
+        - label: "我已查阅过现有Issue"
+          required: true
+        - label: "我正在使用最新版本"
+          required: true
   - type: textarea
     attributes:
       label: 你的环境
