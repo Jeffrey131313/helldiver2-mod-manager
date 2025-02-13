@@ -29,11 +29,11 @@ body:
       placeholder: "应该正常执行..."
 
   - type: textarea
-  attributes:
-    label: 上传日志, 日志在./MD2MM.log
-    description: | 
-      <请将文件拖拽至此区域 或 通过云分享链接提供>
-      支持格式：.log/.zip/.txt（单个文件≤10MB）
-  placeholder: 在此粘贴文件分享链接
-  validations:
-    required: true
+    attributes:
+      label: 上传日志, 日志在./MD2MM.log
+      description: | 
+        <请将文件拖拽至此区域 或 通过云分享链接提供>
+        支持格式：.log/.zip/.txt（单个文件≤10MB）
+    placeholder: 在此粘贴文件分享链接
+    validations:
+      required: true
