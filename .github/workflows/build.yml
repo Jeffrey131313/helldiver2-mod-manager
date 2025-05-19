@@ -25,6 +25,6 @@ jobs:
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico;." --add-data "default.png;." mod_manager.py
-
+        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico:." --add-data "default.png:." mod_manager.py
+    
 
