@@ -29,10 +29,10 @@ jobs:
 
     - id: get_version
       run: |
-        import yaml
+        import os, yaml
         with open('info.yml', 'r') as f:
             data = yaml.safe_load(f)
-        print(f"::set-output name=version::{data['version']}")
+        print(f"version={data['version']}", file=open(os.environ['GITHUB_OUTPUT'], 'a'))
       shell: python
 
     - name: Create Release and upload assets
