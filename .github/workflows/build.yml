@@ -1,5 +1,8 @@
 name: Build mod_manager
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
