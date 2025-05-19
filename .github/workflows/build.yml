@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - name: Checkout repository
@@ -28,7 +28,7 @@ jobs:
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico:." --add-data "default.png:." mod_manager.py
+        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico:," --add-data "default.png:," mod_manager.py
 
     - id: get_version
       run: |
@@ -45,5 +45,6 @@ jobs:
         name: Release ${{ steps.get_version.outputs.version }}
         body: Release for version ${{ steps.get_version.outputs.version }}
         files: dist/**
+        update: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
