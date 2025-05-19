@@ -18,13 +18,29 @@ jobs:
       with:
         python-version: 3.13
 
-    - name: Install PyInstaller
+    - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
+        pip install pyinstaller pyyaml
 
     - name: Build executable with PyInstaller
       run: |
         pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico:." --add-data "default.png:." mod_manager.py
-    
 
+    - id: get_version
+      run: |
+        import yaml
+        with open('info.yml', 'r') as f:
+            data = yaml.safe_load(f)
+        print(f"::set-output name=version::{data['version']}")
+      shell: python
+
+    - name: Create Release and upload assets
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.get_version.outputs.version }}
+        name: Release ${{ steps.get_version.outputs.version }}
+        body: Release for version ${{ steps.get_version.outputs.version }}
+        files: dist/**
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
