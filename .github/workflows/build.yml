@@ -16,20 +16,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Python 3.13
-      uses: actions/setup-python@v4
+    - name: Cache pip packages
+      uses: actions/cache@v3
       with:
-        python-version: 3.13
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller pyyaml
         pip install -r requirements.txt
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico:," --add-data "default.png:," mod_manager.py
+        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico;." --add-data "default.png;." mod_manager.py
 
     - id: get_version
       run: |
