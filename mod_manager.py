@@ -529,6 +529,9 @@ if not sysexit:
             except:
                 logging.info("未找到modlist")
 
+            open(r".\mods\mod_name.json", "w").write("{}")
+            open(r".\mods\mod_list.json", "w").write("{}")
+
             try:
                 for temp_mod_name in mod_name.values():
                     for temp_mod_list in mod_list.values():
