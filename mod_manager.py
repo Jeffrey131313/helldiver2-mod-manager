@@ -562,212 +562,210 @@ if not sysexit:
                         self.rendered_mod_folders.remove(widget)
 
         def refresh_mod_list(self, event=None):
-            search_term = self.search_var.get().lower()
-
             for widget in self.mod_list_frame.winfo_children():
                 widget.destroy()
+
+            search_term = self.search_var.get().lower()
 
             mod_sorted_pre = {}
             sorted_yml_path = os.path.join(".", "mods", "mod_sorted.yml")
             if os.path.exists(sorted_yml_path):
                 with open(sorted_yml_path, "r", encoding="utf-8") as f:
                     mod_sorted_pre = yaml.safe_load(f) or {}
-
             mod_sorted_pre = {k: int(v) if str(v).isdigit() else 9999
                               for k, v in mod_sorted_pre.items()}
 
-            mod_folders = [f for f in os.listdir(MOD_FOLDER)
+            all_folders = [f for f in os.listdir(MOD_FOLDER)
                            if os.path.isdir(os.path.join(MOD_FOLDER, f))]
 
-            for mod_folder in mod_folders:
-                if mod_folder not in mod_sorted_pre:
-                    mod_sorted_pre[mod_folder] = 9999
+            for folder in all_folders:
+                if folder not in mod_sorted_pre:
+                    mod_sorted_pre[folder] = 9999
 
-            mod_sorted_list = sorted(mod_folders,
-                                     key=lambda x: mod_sorted_pre.get(x, 9999))
+            sorted_folders = sorted(all_folders, key=lambda x: mod_sorted_pre.get(x, 9999))
 
-
-            for index, mod_folder in enumerate(mod_sorted_list):
-                row = index // 2
-                column = index % 2
-
-                mod_path = os.path.join(MOD_FOLDER, mod_folder)
-                if not os.path.isdir(mod_path):
-                    continue
-
+            filtered_folders = []
+            for folder in sorted_folders:
+                mod_path = os.path.join(MOD_FOLDER, folder)
                 mod_info_path = os.path.join(mod_path, "mod_info.yml")
                 if not os.path.exists(mod_info_path):
                     continue
-
                 with open(mod_info_path, "r", encoding="utf-8") as f:
                     mod_info = yaml.safe_load(f)
+                name = mod_info.get("name", "").lower()
+                author = mod_info.get("author", "").lower()
+                desc = mod_info.get("description", "").lower()
+                if search_term in f"{name} {author} {desc}":
+                    filtered_folders.append(folder)
 
-                mod_name = mod_info.get("name", "").lower()
-                mod_author = mod_info.get("author", "").lower()
-                mod_desc = mod_info.get("description", "").lower()
-                if search_term not in f"{mod_name} {mod_author} {mod_desc}":
-                    continue
+            total_mods = len(filtered_folders)
+            batch_size = 8
 
-                container = ttk.Frame(self.mod_list_frame, style="CardContainer.TFrame", padding=2)
-                container.grid(row=row, column=column, sticky="nsew", padx=5, pady=5)
+            def load_batch(start_index=0):
+                end_index = min(start_index + batch_size, total_mods)
+                for idx in range(start_index, end_index):
+                    mod_folder = filtered_folders[idx]
+                    mod_path = os.path.join(MOD_FOLDER, mod_folder)
+                    mod_info_path = os.path.join(mod_path, "mod_info.yml")
 
-                card = ttk.Frame(container, style="Card.TFrame", width=500)
-                card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+                    with open(mod_info_path, "r", encoding="utf-8") as f:
+                        mod_info = yaml.safe_load(f)
 
-                content_frame = ttk.Frame(card)
-                content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+                    row = idx // 2
+                    col = idx % 2
 
-                top_frame = ttk.Frame(content_frame)
-                top_frame.pack(fill=tk.BOTH, expand=True)
+                    container = ttk.Frame(self.mod_list_frame, style="CardContainer.TFrame", padding=2)
+                    container.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
 
-                preview_frame = ttk.Frame(top_frame)
-                preview_frame.pack(side=tk.LEFT, fill=tk.Y)
+                    card = ttk.Frame(container, style="Card.TFrame", width=500)
+                    card.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-                preview_image = self.default_preview_image
-                preview_path = os.path.join(mod_path, "preview.png")
-                if os.path.exists(preview_path):
-                    try:
-                        img = Image.open(preview_path)
-                        img = img.resize((100, 100), Image.LANCZOS)
-                        preview_image = ImageTk.PhotoImage(img)
-                    except Exception as e:
-                        logging.info(f"Error loading preview image: {e}")
+                    content_frame = ttk.Frame(card)
+                    content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-                img_label = ttk.Label(preview_frame, image=preview_image)
-                img_label.image = preview_image
-                img_label.pack()
+                    top_frame = ttk.Frame(content_frame)
+                    top_frame.pack(fill=tk.BOTH, expand=True)
 
-                info_frame = ttk.Frame(top_frame)
-                info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+                    preview_frame = ttk.Frame(top_frame)
+                    preview_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-                title_text = mod_info.get("name", "未命名模组")
-                title_container = ttk.Frame(info_frame, height=60)
-                title_container.pack(fill=tk.X, pady=(0, 5))
+                    preview_image = self.default_preview_image
+                    preview_path = os.path.join(mod_path, "preview.png")
+                    if os.path.exists(preview_path):
+                        try:
+                            img = Image.open(preview_path).resize((100, 100), Image.LANCZOS)
+                            preview_image = ImageTk.PhotoImage(img)
+                        except Exception as e:
+                            logging.info(f"Error loading preview image: {e}")
+                    img_label = ttk.Label(preview_frame, image=preview_image)
+                    img_label.image = preview_image
+                    img_label.pack()
 
-                check_text = font.Font(family="Segoe UI", size=12, weight="bold")
-                text_width = check_text.measure(title_text)
-                default_width = 291
-                while text_width < default_width:
-                    title_text += "\n"
-                    default_width -= 291
-                if text_width > 580:
-                    while text_width > 580:
+                    info_frame = ttk.Frame(top_frame)
+                    info_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=10)
+
+                    title_text = mod_info.get("name", "未命名模组")
+                    title_container = ttk.Frame(info_frame, height=60)
+                    title_container.pack(fill=tk.X, pady=(0, 5))
+
+                    check_text = font.Font(family="Segoe UI", size=12, weight="bold")
+                    text_width = check_text.measure(title_text)
+                    default_width = 291
+                    while text_width < default_width:
+                        title_text += "\n"
+                        default_width -= 291
+                    if text_width > 580:
+                        while text_width > 580:
+                            title_text = title_text[:-1]
+                            text_width = check_text.measure(title_text)
                         title_text = title_text[:-1]
-                        text_width = check_text.measure(title_text)
-                    title_text = title_text[:-1]
-                    title_text += "..."
+                        title_text += "..."
 
-                title_label = ttk.Label(
-                    title_container,
-                    text=title_text,
-                    font=("Segoe UI", 12, "bold"),
-                    foreground=self.primary_color,
-                    wraplength=300,
-                    anchor=tk.W,
-                    width=18,
-                    justify="left"
-                )
-                title_label.pack(fill=tk.X, pady=(0, 5))
+                    title_label = ttk.Label(
+                        title_container,
+                        text=title_text,
+                        font=("Segoe UI", 12, "bold"),
+                        foreground=self.primary_color,
+                        wraplength=300,
+                        anchor=tk.W,
+                        width=18,
+                        justify="left"
+                    )
+                    title_label.pack(fill=tk.X, pady=(0, 5))
 
-                enabled = mod_info.get("enabled", False)
-                status_icon = "🟢" if enabled else "🔴"
-                status_color = self.success_color if enabled else self.danger_color
-                status_label = ttk.Label(
-                    info_frame,
-                    text=f"{status_icon} {'已启用' if enabled else '已禁用'}",
-                    foreground=status_color,
-                    font=("Segoe UI", 10)
-                )
-                status_label.pack(anchor=tk.E)
+                    enabled = mod_info.get("enabled", False)
+                    status_icon = "🟢" if enabled else "🔴"
+                    status_color = self.success_color if enabled else self.danger_color
+                    status_label = ttk.Label(
+                        info_frame,
+                        text=f"{status_icon} {'已启用' if enabled else '已禁用'}",
+                        foreground=status_color,
+                        font=("Segoe UI", 10)
+                    )
+                    status_label.pack(anchor=tk.E)
 
-                meta_frame = ttk.Frame(info_frame)
-                meta_frame.pack(fill=tk.X, pady=(0, 5))
-                if mod_info.get('author', '未知') == "":
-                    anthor = "未知作者"
-                else:
-                    anthor = mod_info.get('author', '未知')
-                ttk.Label(
-                    meta_frame,
-                    text=f"作者：{anthor}",
-                    font=("Segoe UI", 9),
-                    foreground="#6c757d"
-                ).pack(side=tk.LEFT)
+                    meta_frame = ttk.Frame(info_frame)
+                    meta_frame.pack(fill=tk.X, pady=(0, 5))
+                    anthor = mod_info.get('author', '未知作者') or "未知作者"
+                    ttk.Label(
+                        meta_frame,
+                        text=f"作者：{anthor}",
+                        font=("Segoe UI", 9),
+                        foreground="#6c757d"
+                    ).pack(side=tk.LEFT)
+                    ttk.Label(
+                        meta_frame,
+                        text=f"排序：{mod_sorted_pre.get(mod_folder, 9999)}",
+                        font=("Segoe UI", 9),
+                        foreground="#6c757d"
+                    ).pack(side=tk.RIGHT)
 
-                ttk.Label(
-                    meta_frame,
-                    text=f"排序：{mod_sorted_pre.get(mod_folder, 9999)}",
-                    font=("Segoe UI", 9),
-                    foreground="#6c757d"
-                ).pack(side=tk.RIGHT)
+                    desc_text = mod_info.get("description", "")
+                    desc_label = ttk.Label(
+                        content_frame,
+                        text=desc_text,
+                        wraplength=400,
+                        font=("Segoe UI", 9),
+                        justify=tk.LEFT,
+                        foreground="#495057"
+                    )
+                    desc_label.pack(fill=tk.X, anchor=tk.W, pady=(5, 0))
 
-                desc_text = mod_info.get("description", "")
-                desc_label = ttk.Label(
-                    content_frame,
-                    text=desc_text,
-                    wraplength=400,
-                    font=("Segoe UI", 9),
-                    justify=tk.LEFT,
-                    foreground="#495057"
-                )
-                desc_label.pack(fill=tk.X, anchor=tk.W, pady=(5, 0))
+                    btn_frame = ttk.Frame(content_frame)
+                    btn_frame.pack(fill=tk.X, pady=(5, 0))
+                    btn_container = ttk.Frame(btn_frame)
+                    btn_container.pack(expand=True)
 
-                btn_frame = ttk.Frame(content_frame)
-                btn_frame.pack(fill=tk.X, pady=(5, 0))
+                    temp_list = [""]
+                    if os.path.exists(os.path.join(mod_path, "other")):
+                        temp_list.append(os.listdir(os.path.join(mod_path, "files"))[0])
+                        temp_list.remove("")
+                        for folder in os.listdir(os.path.join(mod_path, "other")):
+                            if folder != os.listdir(os.path.join(mod_path, "files"))[0]:
+                                temp_list.append(folder)
 
-                btn_container = ttk.Frame(btn_frame)
-                btn_container.pack(expand=True)
-                btn_style = {
-                    "style": "TButton",
-                    "width": 9,
-                    "padding": (3, 3)
-                }
-                temp_list = [""]
+                    button_defs = [
+                        ("⚠️ 删除", 'danger.TButton', lambda m=mod_folder: self.delete_mod(m)),
+                        ("🔄 开关", 'info.TButton', lambda m=mod_folder, sl=status_label: self.toggle_mod(m, sl)),
+                        ("⚙️ 配置", 'secondary.TButton', lambda m=mod_folder: self.edit_mod_ui(m)),
+                        ("📁 文件夹", 'success.TButton', lambda m=mod_folder: self.open_dir(m)),
+                        (
+                            ttk.Combobox,
+                            {
+                                'values': temp_list,
+                                'bootstyle': 'primary',
+                                'state': 'readonly',
+                                'width': 7
+                            },
+                            lambda e, m=mod_folder: self.choice_mods(e, m)
+                        ) if temp_list[0] != "" else (
+                        "🌐 链接", 'primary.TButton', lambda m=mod_folder: self.open_url(m))
+                    ]
 
-                if os.path.exists(os.path.join(mod_path, "other")):
-                    temp_list.append(os.listdir(os.path.join(mod_path, "files"))[0])
-                    temp_list.remove("")
-                    for folder in os.listdir(os.path.join(mod_path, "other")):
-                        if folder != os.listdir(os.path.join(mod_path, "files"))[0]:
-                            temp_list.append(folder)
+                    for definition in button_defs:
+                        if isinstance(definition[0], str):
+                            text, style_type, cmd = definition
+                            btn = ttk.Button(
+                                btn_container,
+                                text=text,
+                                command=cmd,
+                                style=style_type,
+                                width=9,
+                                padding=(3, 3)
+                            )
+                            btn.pack(side=tk.LEFT, padx=5)
+                        else:
+                            WidgetClass, kwargs, callback = definition
+                            combo = WidgetClass(btn_container, **kwargs)
+                            combo.set(temp_list[0] if temp_list else "")
+                            combo.bind("<<ComboboxSelected>>", callback)
+                            combo.pack(side=tk.LEFT, padx=5)
 
-                button_defs = [
-                    ("⚠️ 删除", 'danger.TButton', lambda m=mod_folder: self.delete_mod(m)),
-                    ("🔄 开关", 'info.TButton', lambda m=mod_folder, sl=status_label: self.toggle_mod(m, sl)),
-                    ("⚙️ 配置", 'secondary.TButton', lambda m=mod_folder: self.edit_mod_ui(m)),
-                    ("📁 文件夹", 'success.TButton', lambda m=mod_folder: self.open_dir(m)),
-                    (
-                        ttk.Combobox,
-                        {
-                            'values': temp_list,
-                            'bootstyle': 'primary',
-                            'state': 'readonly',
-                            'width': 7
-                        },
-                        lambda e, m=mod_folder: self.choice_mods(e, m)
-                    ) if temp_list[0] != "" else ("🌐 链接", 'primary.TButton', lambda m=mod_folder: self.open_url(m))
-                ]
+                self.canvas.update_idletasks()
+                if end_index < total_mods:
+                    self.root.after(1000, lambda: load_batch(end_index))
 
-                for definition in button_defs:
-                    if isinstance(definition[0], str):
-                        text, style_type, cmd = definition
-                        btn = ttk.Button(
-                            btn_container,
-                            text=text,
-                            command=cmd,
-                            style=style_type,
-                            width=9,
-                            padding=(3, 3)
-                        )
-                        btn.pack(side=tk.LEFT, padx=5)
-                    else:
-                        WidgetClass, kwargs, callback = definition
-                        combo = WidgetClass(btn_container, **kwargs)
-                        combo.set(temp_list[0] if temp_list else "")
-                        combo.bind("<<ComboboxSelected>>", callback)
-                        combo.pack(side=tk.LEFT, padx=5)
-
-            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-            self.mod_list_frame.update_idletasks()
+            load_batch(0)
 
         def choice_mods(self, event, mod_folder):
             print(os.path.join(".", "mods", mod_folder, "files", os.listdir(os.path.join(".", "mods", mod_folder, "files"))[0]))
