@@ -63,7 +63,7 @@ try:
     except requests.exceptions.RequestException as e:
         messagebox.showwarning(f"获取公告失败:", f" {str(e)}")
 
-    if float(version) > 1.63:
+    if float(version) > 1.64:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
