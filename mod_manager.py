@@ -5,6 +5,7 @@ import re
 import shutil
 import subprocess
 import sys
+from math import ceil
 import threading
 import time
 import tkinter
@@ -227,6 +228,8 @@ if not sysexit:
             self.danger_color = "#e74c3c"
             self.bg_color = "#f8f9fa"
             self.text_color = "#2c3e50"
+
+            self.style.configure("Placeholder.TFrame", background=self.bg_color)
 
             root.drop_target_register(DND_FILES)
             root.dnd_bind('<<Drop>>', self.on_drop)
@@ -577,11 +580,9 @@ if not sysexit:
 
             all_folders = [f for f in os.listdir(MOD_FOLDER)
                            if os.path.isdir(os.path.join(MOD_FOLDER, f))]
-
             for folder in all_folders:
                 if folder not in mod_sorted_pre:
                     mod_sorted_pre[folder] = 9999
-
             sorted_folders = sorted(all_folders, key=lambda x: mod_sorted_pre.get(x, 9999))
 
             filtered_folders = []
@@ -599,7 +600,20 @@ if not sysexit:
                     filtered_folders.append(folder)
 
             total_mods = len(filtered_folders)
-            batch_size = 8
+            if total_mods == 0:
+                self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+                return
+
+            from math import ceil
+            total_rows = ceil(total_mods / 2)
+            placeholder_height = 200
+            for row in range(total_rows):
+                for col in range(2):
+                    ph = ttk.Frame(self.mod_list_frame, height=placeholder_height, style="Placeholder.TFrame")
+                    ph.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+            self.canvas.update_idletasks()
+
+            batch_size = 4
 
             def load_batch(start_index=0):
                 end_index = min(start_index + batch_size, total_mods)
@@ -607,12 +621,17 @@ if not sysexit:
                     mod_folder = filtered_folders[idx]
                     mod_path = os.path.join(MOD_FOLDER, mod_folder)
                     mod_info_path = os.path.join(mod_path, "mod_info.yml")
-
                     with open(mod_info_path, "r", encoding="utf-8") as f:
                         mod_info = yaml.safe_load(f)
 
                     row = idx // 2
                     col = idx % 2
+
+                    slaves = self.mod_list_frame.grid_slaves(row=row, column=col)
+                    for s in slaves:
+                        if "Placeholder.TFrame" in str(s.winfo_class()):
+                            s.destroy()
+                            break
 
                     container = ttk.Frame(self.mod_list_frame, style="CardContainer.TFrame", padding=2)
                     container.grid(row=row, column=col, sticky="nsew", padx=5, pady=5)
@@ -648,8 +667,8 @@ if not sysexit:
                     title_container = ttk.Frame(info_frame, height=60)
                     title_container.pack(fill=tk.X, pady=(0, 5))
 
-                    check_text = font.Font(family="Segoe UI", size=12, weight="bold")
-                    text_width = check_text.measure(title_text)
+                    check_text_font = font.Font(family="Segoe UI", size=12, weight="bold")
+                    text_width = check_text_font.measure(title_text)
                     default_width = 291
                     while text_width < default_width:
                         title_text += "\n"
@@ -657,7 +676,7 @@ if not sysexit:
                     if text_width > 580:
                         while text_width > 580:
                             title_text = title_text[:-1]
-                            text_width = check_text.measure(title_text)
+                            text_width = check_text_font.measure(title_text)
                         title_text = title_text[:-1]
                         title_text += "..."
 
@@ -763,7 +782,9 @@ if not sysexit:
 
                 self.canvas.update_idletasks()
                 if end_index < total_mods:
-                    self.root.after(1000, lambda: load_batch(end_index))
+                    self.root.after(80, lambda: load_batch(end_index))
+                else:
+                    self.canvas.update_idletasks()
 
             load_batch(0)
 
