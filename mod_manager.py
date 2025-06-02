@@ -841,7 +841,7 @@ if not sysexit:
                         if file.lower().endswith((".png", ".jpg", ".jpeg")):
                             preview_path = os.path.join(folder_path, file)
                             preview_path_var.set(preview_path)
-                            img = Image.open(preview_path).resize((150, 150))
+                            img = Image.open(preview_path).resize((100, 100))
                             preview_image = ImageTk.PhotoImage(img)
                             preview_label.config(image=preview_image)
                             preview_label.image = preview_image
@@ -1201,6 +1201,15 @@ if not sysexit:
 
                         shutil.copytree(os.path.join(mod_folder, one_mod_folder), os.path.join(mod_folder_path2, "files"))
 
+                        for file in os.listdir(os.path.join(mod_folder_path2, "files")):
+                            if file.lower().endswith((".png", ".jpg", ".jpeg")):
+                                shutil.copy(os.path.join(mod_folder_path2, "files", file), os.path.join(mod_folder_path2, "preview.png"))
+
+                        for filename in os.listdir(os.path.join(mod_folder_path2, "files")):
+                            file_path = os.path.join(os.path.join(mod_folder_path2, "files"), filename)
+                            if os.path.isfile(file_path) and "patch_" not in filename:
+                                os.remove(file_path)
+
                         mod_info = {
                             "name": one_mod_folder,
                             "author": mod_author,
@@ -1241,6 +1250,7 @@ if not sysexit:
 
                         if preview_path:
                             shutil.copy(preview_path, os.path.join(mod_folder_path, "preview.png"))
+
                         for delete in os.listdir("./temp"):
                             shutil.rmtree(os.path.join("./temp", delete))
 
