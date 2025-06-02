@@ -1,11 +1,12 @@
+import hashlib
 import json
+import logging
 import os
 import random
 import re
 import shutil
 import subprocess
 import sys
-from math import ceil
 import threading
 import time
 import tkinter
@@ -14,20 +15,15 @@ import webbrowser
 import winreg
 import zipfile
 from collections import defaultdict
-from os.path import exists
 from pathlib import Path
 from tkinter import ttk, filedialog, messagebox, font
-from tkinter.ttk import Combobox
-
 import dns.resolver
 import requests
-from tkinterdnd2 import TkinterDnD, DND_FILES
 import yaml
-from PIL import Image, ImageFont, ImageDraw, ImageTk, ImageGrab
+from PIL import Image, ImageTk, ImageGrab
 from py7zr import py7zr
+from tkinterdnd2 import TkinterDnD, DND_FILES
 from ttkbootstrap import Style
-import sys
-import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -235,6 +231,16 @@ if not sysexit:
             root.dnd_bind('<<Drop>>', self.on_drop)
 
             self.default_preview_image = self.create_default_preview_image()
+
+            default_path = resource_path("default.png")
+            try:
+                with open(default_path, "rb") as f:
+                    data = f.read()
+                    self.default_hash = hashlib.md5(data).hexdigest()
+            except Exception as e:
+                logging.info(f"无法计算 default.png 哈希: {e}")
+                self.default_hash = None
+
             self.create_widgets()
             self.refresh_mod_list()
 
@@ -570,6 +576,9 @@ if not sysexit:
 
             search_term = self.search_var.get().lower()
 
+            if search_term != "":
+                self.canvas.yview_moveto(0)
+
             mod_sorted_pre = {}
             sorted_yml_path = os.path.join(".", "mods", "mod_sorted.yml")
             if os.path.exists(sorted_yml_path):
@@ -613,7 +622,7 @@ if not sysexit:
                     ph.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
             self.canvas.update_idletasks()
 
-            batch_size = 4
+            batch_size = 2
 
             def load_batch(start_index=0):
                 end_index = min(start_index + batch_size, total_mods)
@@ -648,14 +657,29 @@ if not sysexit:
                     preview_frame = ttk.Frame(top_frame)
                     preview_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-                    preview_image = self.default_preview_image
                     preview_path = os.path.join(mod_path, "preview.png")
+                    preview_image = self.default_preview_image
+
                     if os.path.exists(preview_path):
                         try:
-                            img = Image.open(preview_path).resize((100, 100), Image.LANCZOS)
-                            preview_image = ImageTk.PhotoImage(img)
+                            use_default = False
+                            if self.default_hash is not None:
+                                with open(preview_path, "rb") as f:
+                                    data = f.read()
+                                    md5sum = hashlib.md5(data).hexdigest()
+                                if md5sum == self.default_hash:
+                                    preview_image = self.default_preview_image
+                                    use_default = True
+
+                            if not use_default:
+                                img = Image.open(preview_path).resize((100, 100), Image.LANCZOS)
+                                preview_image = ImageTk.PhotoImage(img)
                         except Exception as e:
-                            logging.info(f"Error loading preview image: {e}")
+                            logging.info(f"Error loading preview image {preview_path}: {e}")
+                            preview_image = self.default_preview_image
+                    else:
+                        preview_image = self.default_preview_image
+
                     img_label = ttk.Label(preview_frame, image=preview_image)
                     img_label.image = preview_image
                     img_label.pack()
@@ -782,7 +806,7 @@ if not sysexit:
 
                 self.canvas.update_idletasks()
                 if end_index < total_mods:
-                    self.root.after(80, lambda: load_batch(end_index))
+                    self.root.after(30, lambda: load_batch(end_index))
                 else:
                     self.canvas.update_idletasks()
 
