@@ -60,7 +60,7 @@ try:
     except requests.exceptions.RequestException as e:
         messagebox.showwarning(f"获取公告失败:", f" {str(e)}")
 
-    if float(version) > 1.65:
+    if float(version) > 1.66:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
@@ -364,7 +364,7 @@ if not sysexit:
                 for file in os.listdir(install_dir):
                     file_path = os.path.join(install_dir, file)
                     if os.path.isfile(file_path):
-                        if '_' in file:
+                        if 'patch_' in file:
                             os.remove(file_path)
                 messagebox.showwarning("删除完成!", "请前往Steam选择验证完整性!")
 
