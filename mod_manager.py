@@ -51,14 +51,14 @@ try:
     versionurl = f"http://{updataip}/updata/version.txt"
 
     try:
-        response = requests.get(logurl, verify=False)
+        response = requests.get(logurl, verify=False, timeout=5)
         response.raise_for_status()
         text = response.text
         version = requests.get(versionurl)
         version.raise_for_status()
         version = version.text
-    except requests.exceptions.RequestException as e:
-        messagebox.showwarning(f"获取公告失败:", f" {str(e)}")
+    except:
+        messagebox.showwarning(f"获取公告失败:", f"获取失败")
 
     if float(version) > 1.66:
         update_confirm = messagebox.askyesno(
@@ -74,7 +74,7 @@ try:
                 save_path = f"./helldiver2mod_manager-{float(version)}.exe"
                 response = requests.get(url, stream=True)
                 response.raise_for_status()
-#123
+
                 with open(save_path, 'wb') as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
