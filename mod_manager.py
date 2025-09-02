@@ -133,13 +133,42 @@ if not sysexit:
             return os.path.join(sys._MEIPASS, relative_path)
         return os.path.join(os.path.abspath("."), relative_path)
 
-    def get_steam_install_path():
+
+    def get_helldivers2_path():
+        import winreg
+
         try:
-            registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam")
-            steam_path, _ = winreg.QueryValueEx(registry_key, "SteamPath")
-            return steam_path
-        except FileNotFoundError:
+            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam")
+            steam_path, _ = winreg.QueryValueEx(key, "SteamPath")
+            winreg.CloseKey(key)
+        except Exception:
             return None
+
+        steam_path = os.path.normpath(steam_path)
+        library_vdf = os.path.join(steam_path, "steamapps", "libraryfolders.vdf")
+
+        if not os.path.exists(library_vdf):
+            return None
+
+        libraries = [os.path.join(steam_path, "steamapps")]
+        with open(library_vdf, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        for match in re.finditer(r'"\d+"\s+"([^"]+)"', content):
+            lib_path = match.group(1).replace("\\\\", "\\")
+            libraries.append(os.path.join(lib_path, "steamapps"))
+
+        for lib in libraries:
+            manifest = os.path.join(lib, "appmanifest_553850.acf")
+            if os.path.exists(manifest):
+                with open(manifest, "r", encoding="utf-8") as f:
+                    data = f.read()
+                m = re.search(r'"installdir"\s+"([^"]+)"', data)
+                if m:
+                    game_folder = m.group(1)
+                    return os.path.join(lib, "common", game_folder, "data")
+
+        return None
 
     def movefiletofatherpath(source_folder):
         items = os.listdir(source_folder)
@@ -155,26 +184,9 @@ if not sysexit:
 
             os.rmdir(subfolder)
 
-    def get_steam_game_paths():
-        target_end = r"\Helldivers 2\data"
-        target_end2 = r"\Helldivers 2"
-        steam_path = get_steam_install_path()
-        if steam_path:
-            common_games_path = os.path.join(steam_path, "steamapps", "common", "Helldivers 2", "data")
-            if os.path.exists(common_games_path):
-                if os.path.normpath(common_games_path).endswith(os.path.normpath(target_end)):
-                    return common_games_path
-                elif os.path.normpath(common_games_path).endswith(os.path.normpath(target_end2)):
-                    common_games_path = os.path.join(common_games_path, "data")
-                    return common_games_path
-                else:
-                    return False
-        return False
-
-
     if not os.path.exists(r".\config.yml"):
-        if get_steam_game_paths():
-            steam_game_paths = get_steam_game_paths()
+        if get_helldivers2_path():
+            steam_game_paths = get_helldivers2_path()
             with open("config.yml", "w") as f:
                 f.write(os.path.normpath(steam_game_paths))
         else:
