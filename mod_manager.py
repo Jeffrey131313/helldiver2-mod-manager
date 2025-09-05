@@ -59,7 +59,7 @@ try:
     except:
         messagebox.showwarning(f"获取公告失败:", f"获取失败")
 
-    if float(version) > 1.7:
+    if float(version) > 1.71:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
@@ -125,8 +125,8 @@ if not sysexit:
         try:
             with open("./old_file.txt", "r", encoding="utf-8") as f:
                 old_file_name = f.read()
-            os.remove(old_file_name)
             os.remove("./old_file.txt")
+            os.remove(old_file_name)
         except Exception as e:
             logging.info(f"发生错误: {e}")
 
@@ -1632,8 +1632,6 @@ if not sysexit:
                     messagebox.showerror("删除失败", f"删除时发生错误：{str(e)}")
 
     if __name__ == "__main__":
-        if os.path.exists(os.path.join(".", "old_file.txt")):
-            sys.exit()
         root = TkinterDnD.Tk()
         app = ModManagerApp(root)
         root.iconbitmap(resource_path("app_icon.ico"))
