@@ -48,9 +48,9 @@ jobs:
         
         with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
             print(f"version={version}", file=fh)
-                print(f"log<<EOF", file=fh)
-                print(formatted_log, file=fh)
-                print("EOF", file=fh)
+            print(f"log<<EOF", file=fh)
+            print(formatted_log, file=fh)
+            print("EOF", file=fh)
       shell: python
 
     - name: Create Release and upload assets
