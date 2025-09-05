@@ -43,12 +43,14 @@ jobs:
         version = data['version']
         log = data.get('log', '')
 
-        log_lines = log.split('\\n')
+        log_lines = log.splitlines()
         formatted_log = '\n'.join(f"- {line}" for line in log_lines)
         
         with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
             print(f"version={version}", file=fh)
-            print(f"log={formatted_log}", file=fh)
+                print(f"log<<EOF", file=fh)
+                print(formatted_log, file=fh)
+                print("EOF", file=fh)
       shell: python
 
     - name: Create Release and upload assets
