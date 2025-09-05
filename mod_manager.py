@@ -12,7 +12,6 @@ import time
 import tkinter
 import tkinter as tk
 import webbrowser
-import winreg
 import zipfile
 from collections import defaultdict
 from pathlib import Path
