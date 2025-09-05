@@ -117,6 +117,9 @@ if not sysexit:
     if not os.path.exists(MOD_FOLDER):
         os.makedirs(MOD_FOLDER)
 
+    if not os.path.exists("./other"):
+        os.makedirs("./other")
+
     if os.path.exists("./old_file.txt"):
         time.sleep(1)
         logging.info("找到文件")
@@ -196,13 +199,13 @@ if not sysexit:
                 target_end = r"\Helldivers 2\data"
                 target_end2 = r"\Helldivers 2"
                 ChoiceOK = True
-                while ChoiceOK:
+                while True:
                     if os.path.normpath(path).endswith(os.path.normpath(target_end)):
                         endpath = path
-                        ChoiceOK = False
+                        break
                     elif os.path.normpath(path).endswith(os.path.normpath(target_end2)):
                         endpath = os.path.join(path, "data")
-                        ChoiceOK = False
+                        break
                     else:
                         messagebox.showwarning("提示", "请重新选择")
                         path = tkinter.filedialog.askdirectory(title="请选择HD2文件夹")
@@ -318,14 +321,14 @@ if not sysexit:
 
             ttk.Button(
                 control_panel,
-                text="⚠️ 从游戏删除",
-                command=self.uninstall,
-                style="danger.TButton"
+                text="📁 打开游戏目录",
+                command=self.open_floder,
+                style="primary.TButton"
             ).pack(pady=5, fill=tk.X, padx=15)
 
             ttk.Button(
                 control_panel,
-                text="⚠️ 删除所有Mod",
+                text="⚠ 删除所有Mod",
                 command=self.remove_all_mod,
                 style="danger.TButton"
             ).pack(pady=5, fill=tk.X, padx=15)
@@ -378,7 +381,7 @@ if not sysexit:
                     if os.path.isfile(file_path):
                         if 'patch_' in file:
                             os.remove(file_path)
-                messagebox.showwarning("删除完成!", "请前往Steam选择验证完整性!")
+                messagebox.showwarning("删除完成!", "不再需要验证完整性, 你可以直接重新安装")
 
         def real_install(self):
             mod_number = {}
@@ -471,6 +474,19 @@ if not sysexit:
 
                 grouped_files = defaultdict(lambda: defaultdict(list))
 
+                other_folder = os.path.join(os.path.dirname(MOD_FOLDER), "other")
+                if os.path.exists(other_folder):
+                    other_files = os.listdir(other_folder)
+                    for file in other_files:
+                        match = re.match(r"^(.*?\.patch_\d+)", file)
+                        if match:
+                            head_and_patch = match.group(1)
+                            head_match = re.match(r"^(\S+)\.patch_(\d+)", head_and_patch)
+                            if head_match:
+                                file_head = head_match.group(1)
+                                patch_number = head_match.group(2)
+                                grouped_files[file_head][patch_number].append(os.path.join(other_folder, file))
+
                 for file in mod_files:
                     match = re.match(r"^(.*?\.patch_\d+)", file)
                     if match:
@@ -483,42 +499,37 @@ if not sysexit:
 
                 for file_head, patch_group in grouped_files.items():
                     for patch_number, files_in_group in patch_group.items():
-                        max_number = -1
-                        if not file_head in mod_number:
-                            logging.info(f"未找到已有数据. {file_head}")
-                            existing_files = [
-                                f for f in os.listdir(install_dir)
-                                if re.match(fr"^{re.escape(file_head)}\.patch_\d+$", f)
-                            ]
-                            for file_name in existing_files:
-                                match = re.match(rf"^{re.escape(file_head)}\.patch_(\d+)$", file_name)
-                                if match:
-                                    patch_number = int(match.group(1))
-                                    if patch_number > max_number:
-                                        max_number = patch_number
-                            max_number += 1
-                            if max_number < 0:
-                                max_number = 0
-                            if mod_number.get(file_head, -1) == -1:
-                                mod_number[file_head] = max_number
-                                logging.info(f"{file_head}被赋值为{max_number}")
+                        if file_head not in mod_number:
+                            mod_number[file_head] = 0
+                            logging.info(f"{file_head} 初始编号设为 0")
                         else:
-                            max_number = mod_number[file_head]
-                            logging.info(f"{file_head}被赋值为{max_number}")
+                            logging.info(f"{file_head} 当前编号 {mod_number[file_head]}")
                         for file in files_in_group:
-                            match = re.match(r"^(.+?)\.patch_(\d+)(\.\w+)?$", file)
+                            file_name = os.path.basename(file)
+                            match = re.match(r"^(.+?)\.patch_(\d+)(\.\w+)?$", file_name)
                             if match:
-                                file_prefix = match.group(1)
-                                file_suffix = match.group(3)
-                                if file_suffix is None:
-                                    new_file_name = f"{file_prefix}.patch_{max_number}"
+                                while True:
+                                    file_prefix = match.group(1)
+                                    file_suffix = match.group(3)
+                                    if file_suffix is None:
+                                        new_file_name = f"{file_prefix}.patch_{mod_number[file_head]}"
+                                    else:
+                                        new_file_name = f"{file_prefix}.patch_{mod_number[file_head]}{file_suffix}"
+                                    if not os.path.exists(os.path.join(install_dir, new_file_name)):
+                                        break
+                                    else:
+                                        logging.info(f"{file_head} 当前编号 {mod_number[file_head]} 已存在 自动+1")
+                                        mod_number[file_head] += 1
+                                if not os.path.isfile(file):
+                                    print(os.path.isfile(file),file)
+                                    source_file_path = os.path.join(mod_files_path, file)
                                 else:
-                                    new_file_name = f"{file_prefix}.patch_{max_number}{file_suffix}"
-                                source_file_path = os.path.join(mod_files_path, file)
+                                    print(file)
+                                    source_file_path = file
                                 destination_file_path = os.path.join(install_dir, new_file_name)
                                 shutil.copy(source_file_path, destination_file_path)
                                 logging.info(f"文件 {file} 已复制为 {new_file_name} 到 {install_dir}")
-                            mod_list[mod_install] = max_number
+                            mod_list[mod_install] = mod_number[file_head]
                             mod_name[mod_install] = file_prefix
                             mod_install += 1
                         mod_number[file_head] += 1
@@ -527,44 +538,14 @@ if not sysexit:
                 json.dump(mod_name, f, ensure_ascii=False, indent=4)
             with open(r".\mods\mod_list.json", "w", encoding="utf-8") as f:
                 json.dump(mod_list, f, ensure_ascii=False, indent=4)
-            messagebox.showinfo("模组安装完成！", "新版本改成异步而且优化了史山代码")
+            messagebox.showinfo("提示", "模组安装完成!")
 
         def install_mod(self):
             thread = threading.Thread(target=self.real_install)
             thread.start()
 
-        def uninstall(self):
-            thread = threading.Thread(target=self.real_uninstall)
-            thread.start()
-
-        def real_uninstall(self):
-            mod_suffix = ["", ".gpu_resources", ".stream"]
-            try:
-                with open(r".\mods\mod_name.json", "r", encoding="utf-8") as f:
-                    mod_name = json.load(f)
-            except:
-                logging.info("未找到modname")
-            try:
-                with open(r".\mods\mod_list.json", "r", encoding="utf-8") as f:
-                    mod_list = json.load(f)
-            except:
-                logging.info("未找到modlist")
-
-            open(r".\mods\mod_name.json", "w").write("{}")
-            open(r".\mods\mod_list.json", "w").write("{}")
-
-            try:
-                for temp_mod_name in mod_name.values():
-                    for temp_mod_list in mod_list.values():
-                        for temp_mod_suffix in mod_suffix:
-                            delete_file = os.path.join(install_dir,
-                                                       f"{temp_mod_name}.patch_{temp_mod_list}{temp_mod_suffix}")
-                            if os.path.exists(delete_file):
-                                os.remove(delete_file)
-            except Exception as e:
-                logging.info("未删除", e)
-
-            messagebox.showinfo("删除完成!", "这个按钮的作用是, 删除所有由管理器安装的mod, 这样你就可以自己把mod安装为9ba_1来调试, 然后不会和管理器冲突")
+        def open_floder(self):
+            os.startfile(install_dir)
 
         def update_visible_items(self, event=None):
             canvas_height = self.canvas.winfo_height()
@@ -780,7 +761,7 @@ if not sysexit:
                                 temp_list.append(folder)
 
                     button_defs = [
-                        ("⚠️ 删除", 'danger.TButton', lambda m=mod_folder: self.delete_mod(m)),
+                        ("⚠ 删除", 'danger.TButton', lambda m=mod_folder: self.delete_mod(m)),
                         ("🔄 开关", 'info.TButton', lambda m=mod_folder, sl=status_label: self.toggle_mod(m, sl)),
                         ("⚙️ 配置", 'secondary.TButton', lambda m=mod_folder: self.edit_mod_ui(m)),
                         ("📁 文件夹", 'success.TButton', lambda m=mod_folder: self.open_dir(m)),
@@ -892,7 +873,7 @@ if not sysexit:
 
 
                     if "manifest.json" in os.listdir(folder_path) and any(os.path.isdir(os.path.join(folder_path, name)) for name in os.listdir(folder_path)):
-                        messagebox.showwarning("警告", "你选择了一个N网整合包, UI内所有的修改项都将不可用")
+                        messagebox.showwarning("警告", "你选择了一个N网整合包, UI内所有的修改项都将不可用, 不推荐使用N网整合包, 当前对N网整合包支持程度不佳")
                         A.config(state="readonly")
                         B.config(state="readonly")
                         C.config(state="readonly")
@@ -1023,7 +1004,7 @@ if not sysexit:
                                     D.config(state="readonly")
 
                     if "manifest.json" in os.listdir(folder_path) and any(os.path.isdir(os.path.join(folder_path, name)) for name in os.listdir(folder_path)):
-                        messagebox.showwarning("警告", "你选择了一个N网整合包, UI内所有的修改项都将不可用")
+                        messagebox.showwarning("警告", "你选择了一个N网整合包, UI内所有的修改项都将不可用, 不推荐使用N网整合包, 当前对N网整合包支持程度不佳")
                         A.config(state="readonly")
                         B.config(state="readonly")
                         C.config(state="readonly")
@@ -1094,17 +1075,15 @@ if not sysexit:
                     messagebox.showwarning("警告", "模组文件夹不能为空！")
                     return
 
-                cok = True
                 mod_name_fix = None
                 i = 1
-                while cok:
+                while True:
                     mod_folder_path = os.path.join(MOD_FOLDER, f"{mod_name}{mod_name_fix if mod_name_fix is not None else ''}")
                     if os.path.exists(mod_folder_path):
                         mod_name_fix = f"({i})"
                         i += 1
                     else:
-                        cok = False
-
+                        break
 
                 if not os.path.exists(os.path.join(mod_folder, "manifest.json")) and not os.path.isdir(os.path.join(mod_folder, os.listdir(mod_folder)[0])):
                     os.makedirs(mod_folder_path)
@@ -1130,16 +1109,15 @@ if not sysexit:
                         mod_name = mods["Name"]
                         preview_path = os.path.join(mod_folder, mods["Image"])
                         if not "SubOptions" in mods:
-                            cok3 = True
                             mod_name_fix3 = None
                             i3 = 1
-                            while cok3:
+                            while True:
                                 mod_folder_path = os.path.join(MOD_FOLDER, f"{mod_name}{mod_name_fix3 if mod_name_fix3 is not None else ''}")
                                 if os.path.exists(mod_folder_path):
                                     mod_name_fix3 = f"({i3})"
                                     i3 += 1
                                 else:
-                                    cok3 = False
+                                    break
                             shutil.copytree(os.path.join(mod_folder, mods["Include"][0]), os.path.join(mod_folder_path, "files"))
                             for f in os.listdir(os.path.join(mod_folder_path, "files")):
                                 if os.path.isfile(f) and ".patch_" not in f: os.remove(f)
@@ -1199,16 +1177,15 @@ if not sysexit:
                         shutil.copytree(os.path.join(mod_folder, folder), os.path.join(mod_folder_path, "other", folder))
                 elif os.path.isdir(os.path.join(mod_folder, os.listdir(mod_folder)[0])) and chafen_or_duomod_result == False:
                     for one_mod_folder in os.listdir(mod_folder):
-                        cok2 = True
                         mod_name_fix2 = None
                         i2 = 1
-                        while cok2:
+                        while True:
                             mod_folder_path2 = os.path.join(MOD_FOLDER, f"{one_mod_folder}{mod_name_fix2 if mod_name_fix2 is not None else ''}")
                             if os.path.exists(mod_folder_path2):
                                 mod_name_fix2 = f"({i})"
                                 i2 += 1
                             else:
-                                cok2 = False
+                                break
                         os.makedirs(mod_folder_path2)
 
                         shutil.copytree(os.path.join(mod_folder, one_mod_folder), os.path.join(mod_folder_path2, "files"))
