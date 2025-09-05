@@ -386,24 +386,28 @@ if not sysexit:
 
         def real_install(self):
             mod_number = {}
-
             mod_suffix = ["", ".gpu_resources", ".stream"]
+
             try:
                 with open(r".\mods\mod_name.json", "r", encoding="utf-8") as f:
                     mod_name = json.load(f)
             except:
                 logging.info("未找到modname")
+                mod_name = {}
+
             try:
                 with open(r".\mods\mod_list.json", "r", encoding="utf-8") as f:
                     mod_list = json.load(f)
             except:
                 logging.info("未找到modlist")
+                mod_list = {}
 
             try:
                 for temp_mod_name in mod_name.values():
                     for temp_mod_list in mod_list.values():
                         for temp_mod_suffix in mod_suffix:
-                            delete_file = os.path.join(install_dir, f"{temp_mod_name}.patch_{temp_mod_list}{temp_mod_suffix}")
+                            delete_file = os.path.join(install_dir,
+                                                       f"{temp_mod_name}.patch_{temp_mod_list}{temp_mod_suffix}")
                             if os.path.exists(delete_file):
                                 os.remove(delete_file)
             except Exception as e:
@@ -422,7 +426,8 @@ if not sysexit:
                     yaml.dump({}, f, default_flow_style=True, allow_unicode=True)
                 mod_sorted_pre = {}
 
-            mod_sorted_pre = {k: (float(v) if isinstance(v, str) and v.isdigit() else v) for k, v in mod_sorted_pre.items()}
+            mod_sorted_pre = {k: (float(v) if isinstance(v, str) and v.isdigit() else v) for k, v in
+                              mod_sorted_pre.items()}
             mod_sorted_list = os.listdir(MOD_FOLDER)
 
             for mod_folder in mod_sorted_list:
@@ -437,9 +442,10 @@ if not sysexit:
 
             mod_sorted_list = sorted(mod_sorted_list, key=lambda f: mod_sorted_pre.get(f, float('inf')))
 
+            grouped_files = defaultdict(lambda: defaultdict(list))
+
             for mod_folder in mod_sorted_list:
                 mod_folder_path = os.path.join(MOD_FOLDER, mod_folder)
-                logging.info("开始安装mod")
                 if not os.path.isdir(mod_folder_path):
                     continue
 
@@ -454,41 +460,15 @@ if not sysexit:
                 if not mod_info.get("enabled", False):
                     continue
 
-
-                if os.path.exists(os.path.join(MOD_FOLDER, mod_folder, "other")):
-                    mod_files_path = os.path.join(MOD_FOLDER, mod_folder, "files", os.listdir(os.path.join(MOD_FOLDER, mod_folder, "files"))[0])
-                else:
-                    mod_files_path = os.path.join(mod_folder_path, "files")
-                mod_files = os.listdir(mod_files_path)
-
-                mod_file_prefix = None
-                for file_name in mod_files:
-
-                    match = re.match(r"^(.+?)\.patch_\d+$", file_name)
-                    if match:
-                        mod_file_prefix = match.group(1)
-                        break
-
-                if mod_file_prefix is None:
-                    logging.info(f"模组 {mod_folder} 没有符合条件的 patch 文件，跳过...")
+                mod_files_path = os.path.join(mod_folder_path, "files")
+                if not os.path.exists(mod_files_path):
                     continue
 
-                grouped_files = defaultdict(lambda: defaultdict(list))
-
-            other_folder = os.path.join(os.path.dirname(MOD_FOLDER), "other")
-            if os.path.exists(other_folder):
-                other_files = os.listdir(other_folder)
-                for file in other_files:
-                    match = re.match(r"^(.*?\.patch_\d+)", file)
-                    if match:
-                        head_and_patch = match.group(1)
-                        head_match = re.match(r"^(\S+)\.patch_(\d+)", head_and_patch)
-                        if head_match:
-                            file_head = head_match.group(1)
-                            patch_number = head_match.group(2)
-                            grouped_files[file_head][patch_number].append(os.path.join(other_folder, file))
-
+                mod_files = os.listdir(mod_files_path)
                 for file in mod_files:
+                    file_path = os.path.join(mod_files_path, file)
+                    if not os.path.isfile(file_path):
+                        continue
                     match = re.match(r"^(.*?\.patch_\d+)", file)
                     if match:
                         head_and_patch = match.group(1)
@@ -496,44 +476,53 @@ if not sysexit:
                         if head_match:
                             file_head = head_match.group(1)
                             patch_number = head_match.group(2)
-                            grouped_files[file_head][patch_number].append(file)
+                            grouped_files[file_head][patch_number].append(file_path)
 
-                for file_head, patch_group in grouped_files.items():
-                    for patch_number, files_in_group in patch_group.items():
-                        if file_head not in mod_number:
-                            mod_number[file_head] = 0
-                            logging.info(f"{file_head} 初始编号设为 0")
-                        else:
-                            logging.info(f"{file_head} 当前编号 {mod_number[file_head]}")
-                        for file in files_in_group:
-                            file_name = os.path.basename(file)
-                            match = re.match(r"^(.+?)\.patch_(\d+)(\.\w+)?$", file_name)
-                            if match:
-                                while True:
-                                    file_prefix = match.group(1)
-                                    file_suffix = match.group(3)
-                                    if file_suffix is None:
-                                        new_file_name = f"{file_prefix}.patch_{mod_number[file_head]}"
-                                    else:
-                                        new_file_name = f"{file_prefix}.patch_{mod_number[file_head]}{file_suffix}"
-                                    if not os.path.exists(os.path.join(install_dir, new_file_name)):
-                                        break
-                                    else:
-                                        logging.info(f"{file_head} 当前编号 {mod_number[file_head]} 已存在 自动+1")
-                                        mod_number[file_head] += 1
-                                if not os.path.isfile(file):
-                                    print(os.path.isfile(file),file)
-                                    source_file_path = os.path.join(mod_files_path, file)
+            other_path = os.path.join(".", "other")
+            if os.path.exists(other_path) and os.path.isdir(other_path):
+                for file in os.listdir(other_path):
+                    file_path = os.path.join(other_path, file)
+                    if not os.path.isfile(file_path):
+                        continue
+                    match = re.match(r"^(.*?\.patch_\d+)", file)
+                    if match:
+                        head_and_patch = match.group(1)
+                        head_match = re.match(r"^(\S+)\.patch_(\d+)", head_and_patch)
+                        if head_match:
+                            file_head = head_match.group(1)
+                            patch_number = head_match.group(2)
+                            grouped_files[file_head][patch_number].append(file_path)
+
+            for file_head, patch_group in grouped_files.items():
+                for patch_number, files_in_group in patch_group.items():
+                    if file_head not in mod_number:
+                        mod_number[file_head] = 0
+                        logging.info(f"{file_head} 初始编号设为 0")
+                    else:
+                        logging.info(f"{file_head} 当前编号 {mod_number[file_head]}")
+                    for file in files_in_group:
+                        file_name = os.path.basename(file)
+                        match = re.match(r"^(.+?)\.patch_(\d+)(\.\w+)?$", file_name)
+                        if match:
+                            while True:
+                                file_prefix = match.group(1)
+                                file_suffix = match.group(3)
+                                if file_suffix is None:
+                                    new_file_name = f"{file_prefix}.patch_{mod_number[file_head]}"
                                 else:
-                                    print(file)
-                                    source_file_path = file
-                                destination_file_path = os.path.join(install_dir, new_file_name)
-                                shutil.copy(source_file_path, destination_file_path)
-                                logging.info(f"文件 {file} 已复制为 {new_file_name} 到 {install_dir}")
-                            mod_list[mod_install] = mod_number[file_head]
-                            mod_name[mod_install] = file_prefix
-                            mod_install += 1
-                        mod_number[file_head] += 1
+                                    new_file_name = f"{file_prefix}.patch_{mod_number[file_head]}{file_suffix}"
+                                if not os.path.exists(os.path.join(install_dir, new_file_name)):
+                                    break
+                                else:
+                                    logging.info(f"{file_head} 当前编号 {mod_number[file_head]} 已存在 自动+1")
+                                    mod_number[file_head] += 1
+                            destination_file_path = os.path.join(install_dir, new_file_name)
+                            shutil.copy(file, destination_file_path)
+                            logging.info(f"文件 {file} 已复制为 {new_file_name} 到 {install_dir}")
+                        mod_list[mod_install] = mod_number[file_head]
+                        mod_name[mod_install] = file_prefix
+                        mod_install += 1
+                    mod_number[file_head] += 1
 
             with open(r".\mods\mod_name.json", "w", encoding="utf-8") as f:
                 json.dump(mod_name, f, ensure_ascii=False, indent=4)
