@@ -473,18 +473,18 @@ if not sysexit:
 
                 grouped_files = defaultdict(lambda: defaultdict(list))
 
-                other_folder = os.path.join(os.path.dirname(MOD_FOLDER), "other")
-                if os.path.exists(other_folder):
-                    other_files = os.listdir(other_folder)
-                    for file in other_files:
-                        match = re.match(r"^(.*?\.patch_\d+)", file)
-                        if match:
-                            head_and_patch = match.group(1)
-                            head_match = re.match(r"^(\S+)\.patch_(\d+)", head_and_patch)
-                            if head_match:
-                                file_head = head_match.group(1)
-                                patch_number = head_match.group(2)
-                                grouped_files[file_head][patch_number].append(os.path.join(other_folder, file))
+            other_folder = os.path.join(os.path.dirname(MOD_FOLDER), "other")
+            if os.path.exists(other_folder):
+                other_files = os.listdir(other_folder)
+                for file in other_files:
+                    match = re.match(r"^(.*?\.patch_\d+)", file)
+                    if match:
+                        head_and_patch = match.group(1)
+                        head_match = re.match(r"^(\S+)\.patch_(\d+)", head_and_patch)
+                        if head_match:
+                            file_head = head_match.group(1)
+                            patch_number = head_match.group(2)
+                            grouped_files[file_head][patch_number].append(os.path.join(other_folder, file))
 
                 for file in mod_files:
                     match = re.match(r"^(.*?\.patch_\d+)", file)
