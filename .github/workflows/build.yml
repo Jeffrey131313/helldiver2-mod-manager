@@ -62,5 +62,7 @@ jobs:
           ${{ steps.get_version.outputs.version }}
           更新内容:
           ${{ steps.get_version.outputs.log }}
+        files: dist/**
+        update: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
