@@ -59,7 +59,7 @@ try:
     except:
         messagebox.showwarning(f"获取公告失败:", f"获取失败")
 
-    if float(version) > 1.71:
+    if float(version) > 1.72:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
@@ -91,6 +91,8 @@ try:
 
             except requests.exceptions.RequestException as e:
                 messagebox.showwarning(f"下载失败:", f"{e}")
+        else:
+            sysexit = False
 except:
     None
 
