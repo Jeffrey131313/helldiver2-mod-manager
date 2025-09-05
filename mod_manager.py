@@ -60,7 +60,7 @@ try:
     except:
         messagebox.showwarning(f"获取公告失败:", f"获取失败")
 
-    if float(version) > 1.67:
+    if float(version) > 1.7:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
