@@ -36,9 +36,19 @@ jobs:
     - id: get_version
       run: |
         import os, yaml
-        with open('info.yml', 'r') as f:
+        
+        with open('info.yml', 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
-        print(f"version={data['version']}", file=open(os.environ['GITHUB_OUTPUT'], 'a'))
+        
+        version = data['version']
+        log = data.get('log', '')
+        
+        log_lines = log.splitlines()
+        formatted_log = '\n'.join(f"- {line}" for line in log_lines)
+        
+        with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as fh:
+            print(f"version={version}", file=fh)
+            print(f"log={formatted_log}", file=fh)
       shell: python
 
     - name: Create Release and upload assets
@@ -46,8 +56,9 @@ jobs:
       with:
         tag_name: ${{ steps.get_version.outputs.version }}
         name: Release ${{ steps.get_version.outputs.version }}
-        body: Release for version ${{ steps.get_version.outputs.version }}
-        files: dist/**
-        update: true
+        body: |
+          ${{ steps.get_version.outputs.version }}
+          更新内容:
+          ${{ steps.get_version.outputs.log }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
