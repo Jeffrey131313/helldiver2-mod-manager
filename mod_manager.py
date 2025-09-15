@@ -44,7 +44,7 @@ MOD_FOLDER = "./mods"
 try:
     resolver = dns.resolver.Resolver()
     resolver.nameservers = ['223.6.6.6']
-    answer = resolver.resolve('helldiver2mod.cn', 'A')
+    answer = resolver.resolve('updata.helldiver2mod.cn', 'A')
     updataip = answer[0].address
     logurl = f"http://{updataip}/updata/log.txt"
     versionurl = f"http://{updataip}/updata/version.txt"
