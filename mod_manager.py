@@ -20,6 +20,7 @@ import dns.resolver
 import requests
 import yaml
 from PIL import Image, ImageTk, ImageGrab
+from kiwisolver import Expression
 from py7zr import py7zr
 from tkinterdnd2 import TkinterDnD, DND_FILES
 from ttkbootstrap import Style
@@ -52,14 +53,14 @@ try:
     try:
         response = requests.get(logurl, verify=False, timeout=5)
         response.raise_for_status()
-        text = response.text
+        text = response.text.replace("\\n", "\n")
         version = requests.get(versionurl)
         version.raise_for_status()
         version = version.text
     except:
         messagebox.showwarning(f"获取公告失败:", f"获取失败")
 
-    if float(version) > 1.72:
+    if float(version) > 1.73:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
@@ -89,25 +90,28 @@ try:
 
                 sysexit = True
 
-            except requests.exceptions.RequestException as e:
+            except Expression as e:
                 messagebox.showwarning(f"下载失败:", f"{e}")
         else:
             sysexit = False
 except:
-    None
+    pass
 
 if not sysexit:
-    if not os.path.exists("./UnRAR.exe"):
-        response = requests.get(r"https://www.rarlab.com/rar/unrarw64.exe", stream=True)
-        if response.status_code == 200:
-            with open("./unrarw64.exe", 'wb') as file:
-                file.write(response.content)
-            subprocess.run("./unrarw64.exe -s path=./")
-            os.remove("./license.txt")
-            os.remove("./unrarw64.exe")
-            logging.info("安装UnRAR成功")
-        else:
-            logging.info("UnRAR下载失败")
+    try:
+        if not os.path.exists("./UnRAR.exe"):
+            response = requests.get(r"https://www.rarlab.com/rar/unrarw64.exe", stream=True)
+            if response.status_code == 200:
+                with open("./unrarw64.exe", 'wb') as file:
+                    file.write(response.content)
+                subprocess.run("./unrarw64.exe -s path=./")
+                os.remove("./license.txt")
+                os.remove("./unrarw64.exe")
+                logging.info("安装UnRAR成功")
+            else:
+                logging.info("UnRAR下载失败")
+    except Expression as e:
+        messagebox.showwarning(f"UnRAR下载失败:", f"{e}")
 
     if os.path.exists("./temp"):
         for delete in os.listdir("./temp"):
@@ -570,12 +574,26 @@ if not sysexit:
             mod_sorted_pre = {k: int(v) if str(v).isdigit() else 9999
                               for k, v in mod_sorted_pre.items()}
 
-            all_folders = [f for f in os.listdir(MOD_FOLDER)
-                           if os.path.isdir(os.path.join(MOD_FOLDER, f))]
+            all_folders = [f for f in os.listdir(MOD_FOLDER) if os.path.isdir(os.path.join(MOD_FOLDER, f))]
+
+            folder_names = {}
+            for f in all_folders:
+                mod_info_path = os.path.join(MOD_FOLDER, f, "mod_info.yml")
+                if os.path.exists(mod_info_path):
+                    with open(mod_info_path, "r", encoding="utf-8") as mf:
+                        info = yaml.safe_load(mf) or {}
+                    folder_names[f] = info.get("name", f)
+                else:
+                    folder_names[f] = f
+
             for folder in all_folders:
                 if folder not in mod_sorted_pre:
                     mod_sorted_pre[folder] = 9999
-            sorted_folders = sorted(all_folders, key=lambda x: mod_sorted_pre.get(x, 9999))
+
+            sorted_folders = sorted(
+                all_folders,
+                key=lambda x: (folder_names.get(x, x), mod_sorted_pre.get(x, 9999))
+            )
 
             filtered_folders = []
             for folder in sorted_folders:
