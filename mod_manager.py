@@ -58,7 +58,8 @@ try:
         version.raise_for_status()
         version = version.text
     except:
-        messagebox.showwarning(f"获取公告失败:", f"获取失败")
+        messagebox.showwarning(f"获取公告失败:", f"请前往https://github.com/Jeffrey131313/helldiver2-mod-manager查看更新")
+        webbrowser.open("https://github.com/Jeffrey131313/helldiver2-mod-manager")
 
     if float(version) > 1.73:
         update_confirm = messagebox.askyesno(
