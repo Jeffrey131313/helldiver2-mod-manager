@@ -43,10 +43,7 @@ characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 MOD_FOLDER = "./mods"
 
 try:
-    resolver = dns.resolver.Resolver()
-    resolver.nameservers = ['223.6.6.6']
-    answer = resolver.resolve('updata.helldiver2mod.cn', 'A')
-    updataip = answer[0].address
+    updataip = "helldiver2mod.top"
     logurl = f"http://{updataip}/updata/log.txt"
     versionurl = f"http://{updataip}/updata/version.txt"
 
@@ -61,7 +58,7 @@ try:
         messagebox.showwarning(f"获取公告失败:", f"请前往https://github.com/Jeffrey131313/helldiver2-mod-manager查看更新")
         webbrowser.open("https://github.com/Jeffrey131313/helldiver2-mod-manager")
 
-    if float(version) > 1.73:
+    if float(version) > 1.72:
         update_confirm = messagebox.askyesno(
             "更新提示",
             f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
