@@ -20,7 +20,6 @@ import dns.resolver
 import requests
 import yaml
 from PIL import Image, ImageTk, ImageGrab
-from kiwisolver import Expression
 from py7zr import py7zr
 from tkinterdnd2 import TkinterDnD, DND_FILES
 from ttkbootstrap import Style
@@ -48,7 +47,7 @@ try:
     versionurl = f"http://{updataip}/updata/version.txt"
 
     try:
-        response = requests.get(logurl, verify=False, timeout=5)
+        response = requests.get(logurl, verify=False, tikmeout=5)
         response.raise_for_status()
         text = response.text.replace("\\n", "\n")
         version = requests.get(versionurl)
@@ -88,7 +87,7 @@ try:
 
                 sysexit = True
 
-            except Expression as e:
+            except Exception as e:
                 messagebox.showwarning(f"下载失败:", f"{e}")
         else:
             sysexit = False
@@ -108,7 +107,7 @@ if not sysexit:
                 logging.info("安装UnRAR成功")
             else:
                 logging.info("UnRAR下载失败")
-    except Expression as e:
+    except Exception as e:
         messagebox.showwarning(f"UnRAR下载失败:", f"{e}")
 
     if os.path.exists("./temp"):

@@ -1,2 +1,2 @@
 version: 1.7.3
-log: "修复了mod同权重的情况下不会根据mod名排序的bug"
+log: "修复了mod同权重的情况下不会根据mod名排序的bug\n修复了无法自动更新的bug"
