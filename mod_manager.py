@@ -138,7 +138,6 @@ if not sysexit:
             return os.path.join(sys._MEIPASS, relative_path)
         return os.path.join(os.path.abspath("."), relative_path)
 
-
     def get_helldivers2_path():
         import winreg
 
@@ -172,7 +171,6 @@ if not sysexit:
                 if m:
                     game_folder = m.group(1)
                     return os.path.join(lib, "common", game_folder, "data")
-
         return None
 
     def movefiletofatherpath(source_folder):
@@ -222,7 +220,6 @@ if not sysexit:
         os.remove("config.yml")
         messagebox.showwarning("警告", "未找到HD2游戏,请自行前往config.yml修改！")
         sys.exit()
-
 
     class ModManagerApp:
         def __init__(self, root):
