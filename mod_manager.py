@@ -41,58 +41,6 @@ logger.addHandler(console_handler)
 characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 MOD_FOLDER = "./mods"
 
-try:
-    updataip = "helldiver2mod.top"
-    logurl = f"http://{updataip}/updata/log.txt"
-    versionurl = f"http://{updataip}/updata/version.txt"
-
-    try:
-        response = requests.get(logurl, verify=False, tikmeout=5)
-        response.raise_for_status()
-        text = response.text.replace("\\n", "\n")
-        version = requests.get(versionurl)
-        version.raise_for_status()
-        version = version.text
-    except:
-        messagebox.showwarning(f"获取公告失败:", f"请前往https://github.com/Jeffrey131313/helldiver2-mod-manager查看更新")
-        webbrowser.open("https://github.com/Jeffrey131313/helldiver2-mod-manager")
-
-    if float(version) > 1.72:
-        update_confirm = messagebox.askyesno(
-            "更新提示",
-            f"您当前使用的不是最新版本, 点击\"是\"自动更新\n"
-                     f"{float(version)}更新内容:\n"
-                     f"{text}",
-            icon='warning'
-        )
-        if update_confirm:
-            try:
-                url = f"http://{updataip}/updata/{float(version)}.exe"
-                save_path = f"./helldiver2mod_manager-{float(version)}.exe"
-                response = requests.get(url, stream=True)
-                response.raise_for_status()
-
-                with open(save_path, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-                logging.info(f"文件已下载到: {save_path}")
-
-                with open("./old_file.txt", "a", encoding="utf-8") as f:
-                    f.write(sys.executable)
-
-                time.sleep(1)
-
-                update_confirm = messagebox.askyesno("更新完成!", f"双击helldiver2mod_manager-{float(version)}.exe以启动新版本", icon='info')
-
-                sysexit = True
-
-            except Exception as e:
-                messagebox.showwarning(f"下载失败:", f"{e}")
-        else:
-            sysexit = False
-except:
-    pass
 
 if not sysexit:
     try:
