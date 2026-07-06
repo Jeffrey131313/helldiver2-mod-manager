@@ -3,3 +3,4 @@ PyYAML>=6.0
 py7zr>=0.20
 requests>=2.31
 pillow>=10.0
+nuitka
