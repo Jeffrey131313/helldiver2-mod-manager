@@ -31,7 +31,7 @@ jobs:
 
     - name: Build executable with PyInstaller
       run: |
-        pyinstaller --onefile --icon=app_icon.ico --noconsole --additional-hooks-dir=. --add-data "app_icon.ico;." --add-data "default.png;." mod_manager.py
+        py -m nuitka main.py --standalone --onefile --windows-console-mode=disable --enable-plugin=pyqt6 --include-data-files=app_icon.ico=app_icon.ico --include-data-files=default.png=default.png --include-data-files=UnRAR.exe=UnRAR.exe --windows-icon-from-ico=app_icon.ico --output-filename=HD2MM.exe
 
     - id: get_version
       run: |
@@ -62,7 +62,7 @@ jobs:
           ${{ steps.get_version.outputs.version }}
           更新内容:
           ${{ steps.get_version.outputs.log }}
-        files: dist/**
+        files: ./HD2MM.exe
         update: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
