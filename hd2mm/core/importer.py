@@ -46,11 +46,14 @@ class ModImporter:
             mod_dir = self.repository.create_mod(name, options.author, options.link, options.order, description, options.category, guid=guid)
         if (source / "manifest.json").exists():
             manifest_options = parse_manifest_options(source)
-            self.option_service.create_from_manifest_options(mod_dir.name, source, manifest_options)
-            if preserved_groups:
-                self._restore_option_selection(mod_dir.name, preserved_groups)
+            if manifest_options:
+                self.option_service.create_from_manifest_options(mod_dir.name, source, manifest_options)
+                if preserved_groups:
+                    self._restore_option_selection(mod_dir.name, preserved_groups)
+            else:
+                self._import_without_manifest(mod_dir.name, source)
         else:
-            self._import_as_default_option(mod_dir.name, source)
+            self._import_without_manifest(mod_dir.name, source)
         self._copy_preview(mod_dir, source, options.preview)
         return mod_dir.name
 
@@ -77,6 +80,22 @@ class ModImporter:
             if old_choice:
                 choice.selected = old_choice.selected
                 self._restore_choices(choice.children or [], old_choice.children or [])
+
+    def _import_without_manifest(self, mod_id: str, source: Path) -> None:
+        option_directories = self._find_option_directories(source)
+        if option_directories:
+            self.option_service.create_from_directory_options(mod_id, option_directories, source.name)
+            return
+        self._import_as_default_option(mod_id, source)
+
+    def _find_option_directories(self, source: Path) -> list[Path]:
+        if not source.is_dir():
+            return []
+        directories = [item for item in source.iterdir() if item.is_dir() and self._contains_patch_files(item)]
+        return sorted(directories, key=lambda item: item.name.lower())
+
+    def _contains_patch_files(self, directory: Path) -> bool:
+        return any(item.is_file() and PATCH_PATTERN.match(item.name) for item in directory.rglob("*"))
 
     def _import_as_default_option(self, mod_id: str, source: Path) -> None:
         payload = self.option_service.payloads_dir(mod_id) / "default"

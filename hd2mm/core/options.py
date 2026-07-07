@@ -11,6 +11,9 @@ from .models import ManifestOption, OptionChoice, OptionGroup
 from .paths import MODS_DIR
 from .repository import sanitize_name
 
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
+PREFERRED_IMAGE_NAMES = ("icon", "preview", "cover", "thumbnail", "thumb")
+
 
 class OptionService:
     def options_file(self, mod_id: str) -> Path:
@@ -50,6 +53,41 @@ class OptionService:
                 group.choices.append(self._copy_manifest_choice(mod_id, source, choice, selected=index == 0))
             groups.append(group)
         self.save_groups(mod_id, groups)
+
+    def create_from_directory_options(self, mod_id: str, directories: list[Path], group_name: str) -> None:
+        choices: list[OptionChoice] = []
+        for index, directory in enumerate(directories):
+            choice_id = self._id(str(directory.relative_to(directory.parent)))
+            target = self.payloads_dir(mod_id) / choice_id
+            target.mkdir(parents=True, exist_ok=True)
+            for item in directory.iterdir():
+                destination = target / item.name
+                if item.is_dir():
+                    shutil.copytree(item, destination, dirs_exist_ok=True)
+                elif item.is_file():
+                    shutil.copy2(item, destination)
+            image = self._copy_existing_image(mod_id, self._find_directory_image(directory), directory)
+            choices.append(
+                OptionChoice(
+                    id=choice_id,
+                    name=directory.name,
+                    image=image,
+                    payload=target.relative_to(MODS_DIR / mod_id),
+                    selected=index == 0,
+                    children=[],
+                )
+            )
+        self.save_groups(
+            mod_id,
+            [
+                OptionGroup(
+                    id=self._id(group_name),
+                    name=group_name,
+                    choices=choices,
+                    multiple=False,
+                )
+            ],
+        )
 
     def selected_payload_roots(self, mod_id: str) -> list[Path]:
         roots: list[Path] = []
@@ -124,6 +162,30 @@ class OptionService:
         target = target_dir / f"{image_id}{image_path.suffix.lower()}"
         shutil.copy2(image_path, target)
         return target.relative_to(MODS_DIR / mod_id)
+
+    def _copy_existing_image(self, mod_id: str, image_path: Path | None, source: Path) -> Path | None:
+        if not image_path or not image_path.exists() or not image_path.is_file():
+            return None
+        target_dir = self.images_dir(mod_id)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            unique_source = str(image_path.resolve().relative_to(source.resolve()))
+        except ValueError:
+            unique_source = str(image_path.resolve())
+        image_id = self._id(f"{source.name}/{unique_source}")
+        target = target_dir / f"{image_id}{image_path.suffix.lower()}"
+        shutil.copy2(image_path, target)
+        return target.relative_to(MODS_DIR / mod_id)
+
+    def _find_directory_image(self, directory: Path) -> Path | None:
+        images = [item for item in directory.rglob("*") if item.is_file() and item.suffix.lower() in IMAGE_SUFFIXES]
+        if not images:
+            return None
+        for preferred_name in PREFERRED_IMAGE_NAMES:
+            for image in images:
+                if image.stem.lower() == preferred_name:
+                    return image
+        return images[0]
 
     def _collect_selected(self, choice: OptionChoice, roots: list[Path], base: Path) -> None:
         if choice.selected and choice.payload:

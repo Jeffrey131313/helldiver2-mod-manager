@@ -1269,34 +1269,27 @@ class MainWindow(QMainWindow):
             self.show_error(zh("\\u56fe\\u7247\\u5904\\u7406\\u5931\\u8d25"), str(exc))
 
     def import_mod(self) -> None:
-        source = self.choose_import_source()
-        if not source:
+        sources = self.choose_import_sources()
+        if not sources:
             return
-        imported, errors = self.import_sources([source])
+        imported, errors = self.import_sources(sources)
         self.refresh_mods()
         if errors:
             self.show_error(zh("\\u5bfc\\u5165\\u5931\\u8d25"), "\n".join(errors))
         elif imported:
             self.show_info(zh("\\u5bfc\\u5165\\u5b8c\\u6210"), zh("\\u5df2\\u5bfc\\u5165: ") + ", ".join(imported))
 
-    def choose_import_source(self) -> Path | None:
-        dialog = QFileDialog(self, zh("\\u9009\\u62e9 Mod \\u538b\\u7f29\\u5305\\u6216\\u6587\\u4ef6\\u5939"))
-        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
-        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
-        dialog.setFilter(QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot)
-        dialog.setNameFilters(["Mod Archives or Folders (*.zip *.rar *.7z)", "All Files and Folders (*)"])
-        for view in dialog.findChildren((QListView, QTreeView)):
-            view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        if dialog.exec() != QFileDialog.DialogCode.Accepted:
-            return None
-        selected = dialog.selectedFiles()
-        if not selected:
-            return None
-        source = Path(selected[0])
-        if source.is_dir() or source.suffix.lower() in {".zip", ".rar", ".7z"}:
-            return source
-        self.show_error(zh("\\u5bfc\\u5165\\u5931\\u8d25"), zh("\\u8bf7\\u9009\\u62e9 .zip/.rar/.7z \\u538b\\u7f29\\u5305\\u6216 Mod \\u6587\\u4ef6\\u5939"))
-        return None
+    def choose_import_sources(self) -> list[Path]:
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            zh("\\u9009\\u62e9 Mod \\u538b\\u7f29\\u5305"),
+            "",
+            "Mod Archives (*.zip *.rar *.7z);;All Files (*)",
+        )
+        if files:
+            return [Path(file) for file in files]
+        folder = QFileDialog.getExistingDirectory(self, zh("\\u9009\\u62e9 Mod \\u6587\\u4ef6\\u5939"))
+        return [Path(folder)] if folder else []
 
     def install_mods(self) -> None:
         try:
