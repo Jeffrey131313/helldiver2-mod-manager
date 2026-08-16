@@ -11,6 +11,7 @@ from .models import ManifestOption
 def load_manifest(path: Path) -> dict[str, Any]:
     text = path.read_text(encoding="utf-8", errors="ignore")
     text = re.sub(r"//.*?$|/\*.*?\*/", "", text, flags=re.MULTILINE | re.DOTALL)
+    text = re.sub(r",\s*([}\]])", r"\1", text)
     return json.loads(text)
 
 

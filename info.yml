@@ -1,2 +1,2 @@
-version: 2026v1
-log: "基于PyQt重构"
+version: 2026v2
+log: "修复了安装差分mod时 差分项不会一起安装的bug"

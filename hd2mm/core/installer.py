@@ -37,22 +37,51 @@ class InstallService:
         self.install_dir.mkdir(parents=True, exist_ok=True)
         self._remove_previous_install()
 
-        grouped_files: dict[str, dict[str, list[Path]]] = defaultdict(lambda: defaultdict(list))
+        mod_number: dict[str, int] = {}
+        mod_name: dict[int, str] = {}
+        mod_list: dict[int, int] = {}
+        install_index = 1
+        copied = 0
         for mod in self.repository.list_mods():
             if not mod.enabled:
                 continue
             for payload_root in self.option_service.selected_payload_roots(mod.id):
                 if payload_root.exists():
+                    # Install each selected difference immediately so one mod's
+                    # payload order is preserved before moving to the next mod.
+                    grouped_files: dict[str, dict[str, list[Path]]] = defaultdict(lambda: defaultdict(list))
                     self._collect_patch_files(payload_root, grouped_files)
+                    copied_now, install_index = self._copy_grouped_files(
+                        grouped_files,
+                        mod_number,
+                        mod_name,
+                        mod_list,
+                        install_index,
+                    )
+                    copied += copied_now
         if OTHER_DIR.exists():
+            grouped_files = defaultdict(lambda: defaultdict(list))
             self._collect_patch_files(OTHER_DIR, grouped_files)
-        return self._copy_grouped_files(grouped_files)
+            copied_now, install_index = self._copy_grouped_files(
+                grouped_files,
+                mod_number,
+                mod_name,
+                mod_list,
+                install_index,
+            )
+            copied += copied_now
+        (MODS_DIR / "mod_name.json").write_text(json.dumps(mod_name, ensure_ascii=False, indent=4), encoding="utf-8")
+        (MODS_DIR / "mod_list.json").write_text(json.dumps(mod_list, ensure_ascii=False, indent=4), encoding="utf-8")
+        return copied
 
-    def _copy_grouped_files(self, grouped_files: dict[str, dict[str, list[Path]]]) -> int:
-        mod_number: dict[str, int] = {}
-        mod_name: dict[int, str] = {}
-        mod_list: dict[int, int] = {}
-        install_index = 1
+    def _copy_grouped_files(
+        self,
+        grouped_files: dict[str, dict[str, list[Path]]],
+        mod_number: dict[str, int],
+        mod_name: dict[int, str],
+        mod_list: dict[int, int],
+        install_index: int,
+    ) -> tuple[int, int]:
         copied = 0
         for file_head, patch_group in grouped_files.items():
             for files_in_group in patch_group.values():
@@ -75,9 +104,7 @@ class InstallService:
                     install_index += 1
                     copied += 1
                 mod_number[file_head] += 1
-        (MODS_DIR / "mod_name.json").write_text(json.dumps(mod_name, ensure_ascii=False, indent=4), encoding="utf-8")
-        (MODS_DIR / "mod_list.json").write_text(json.dumps(mod_list, ensure_ascii=False, indent=4), encoding="utf-8")
-        return copied
+        return copied, install_index
 
     def _collect_patch_files(self, folder: Path, grouped_files: dict[str, dict[str, list[Path]]]) -> None:
         for file in sorted(folder.rglob("*")):
